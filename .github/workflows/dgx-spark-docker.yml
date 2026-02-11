@@ -59,7 +59,8 @@ jobs:
       - name: Login to NGC (nvcr.io) (optional)
         # Try anonymous pulls first. If pulling nvcr.io base images fails (e.g. 401/403),
         # set secret NGC_API_KEY to enable login.
-        if: ${{ secrets.NGC_API_KEY != '' }}
+        # This step will fail silently if NGC_API_KEY is not set, allowing anonymous pulls.
+        continue-on-error: true
         uses: docker/login-action@v3
         with:
           registry: nvcr.io
