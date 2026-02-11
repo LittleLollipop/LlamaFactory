@@ -1,0 +1,32 @@
+# Docker Compose for LLaMA Factory on NVIDIA DGX-SPARK (ARM64).
+# Usage (from repo root on DGX-SPARK):
+#   docker compose -f docker/docker-cuda/docker-compose.dgx-spark.yml up -d
+#   docker compose -f docker/docker-cuda/docker-compose.dgx-spark.yml exec llamafactory bash
+
+services:
+  llamafactory:
+    build:
+      context: ../..
+      dockerfile: docker/docker-cuda/Dockerfile.dgx-spark
+      args:
+        PIP_INDEX: https://pypi.org/simple
+    image: llamafactory:dgx-spark
+    container_name: llamafactory
+    ports:
+      - "7860:7860"
+      - "8000:8000"
+    ipc: host
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    tty: true
+    stdin_open: true
+    command: bash
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: "all"
+              capabilities: [gpu]
+    restart: unless-stopped
