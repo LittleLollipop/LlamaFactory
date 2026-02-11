@@ -42,6 +42,8 @@ jobs:
           else
             echo "tag=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
           fi
+          # GHCR requires lowercase repository names
+          echo "owner_lower=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -77,5 +79,5 @@ jobs:
           build-args: |
             PIP_INDEX=https://pypi.org/simple
           tags: |
-            ghcr.io/${{ github.repository_owner }}/llamafactory:${{ steps.version.outputs.tag }}-dgx-spark
+            ghcr.io/${{ steps.version.outputs.owner_lower }}/llamafactory:${{ steps.version.outputs.tag }}-dgx-spark
 
