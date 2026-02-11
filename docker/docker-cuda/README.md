@@ -142,7 +142,7 @@ docker compose -f docker/docker-cuda/docker-compose.dgx-spark.yml exec llamafact
 
 Reference: [NVIDIA LLaMA Factory playbook for DGX Spark](https://build.nvidia.com/spark/llama-factory).
 
-**CI:** The GitHub Actions workflow (`.github/workflows/docker.yml`) builds and pushes the DGX-SPARK image to **GitHub Container Registry (GHCR)** as `ghcr.io/<owner>/llamafactory:latest-dgx-spark` (or `:<version>-dgx-spark` on release). The workflow **tries anonymous pulls from `nvcr.io` first**; if pulling the base image fails (e.g. 401/403), add an NGC API key as repository secret `NGC_API_KEY` (Settings → Secrets and variables → Actions). Get the key from [NGC Setup → API Key](https://ngc.nvidia.com/setup/api-key).
+**CI:** Use the dedicated workflow `.github/workflows/dgx-spark-docker.yml` to build and push the DGX-SPARK image to **GitHub Container Registry (GHCR)** as `ghcr.io/<owner>/llamafactory:latest-dgx-spark` (or `:<version>-dgx-spark` on release). The workflow **tries anonymous pulls from `nvcr.io` first**; if pulling the base image fails (e.g. 401/403), add an NGC API key as repository secret `NGC_API_KEY` (Settings → Secrets and variables → Actions). Get the key from [NGC Setup → API Key](https://ngc.nvidia.com/setup/api-key).
 
 ## Additional Notes
 
