@@ -30,22 +30,13 @@ RUN pip config set global.index-url "${PIP_INDEX}" && \
 # Copy repo (build context = repository root)
 COPY . /app
 
-# Remove torchaudio from pyproject.toml so we install a version matching the container's PyTorch
+# Remove torchaudio from pyproject.toml so we can install a build that matches the container's PyTorch
 RUN sed -i 's/"torchaudio[^"]*",\?//' pyproject.toml
 
-# Install torchaudio matching container's PyTorch version and CUDA.
-# NGC images may use 2.10.0a0; PyTorch index has 2.10.0, so strip alpha suffix.
-# Detect CUDA version: if CUDA 13.x, use cu130 index; otherwise cu128.
-# If installation fails (e.g. no matching wheel for ARM64), continue without torchaudio.
+# Install torchaudio from source with the same base version as the container's PyTorch to avoid ABI mismatch.
+# NGC images may use versions like 2.10.0a0; strip alpha/beta/rc suffix when pinning.
 RUN TORCH_VER=$(python -c "import torch, re; v=torch.__version__.split('+')[0]; print(re.sub(r'[a-z]+\d*$', '', v))") && \
-    CUDA_MAJOR=$(python -c "import torch; print(torch.version.cuda.split('.')[0])" 2>/dev/null || echo "12") && \
-    if [ "${CUDA_MAJOR}" = "13" ]; then \
-        TORCH_INDEX="https://download.pytorch.org/whl/cu130"; \
-    else \
-        TORCH_INDEX="https://download.pytorch.org/whl/cu128"; \
-    fi && \
-    pip install --no-cache-dir --no-deps "torchaudio==${TORCH_VER}" --index-url "${TORCH_INDEX}" || \
-    echo "Warning: torchaudio installation failed (may not have ARM64 wheel for CUDA ${CUDA_MAJOR}). Audio features will be unavailable."
+    pip install --no-cache-dir --no-deps --no-binary torchaudio "torchaudio==${TORCH_VER}"
 
 # Install LLaMA Factory and metrics/deepspeed (same as main Dockerfile)
 RUN pip install --no-cache-dir --no-build-isolation -e . && \
