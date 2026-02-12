@@ -30,12 +30,17 @@ RUN pip config set global.index-url "${PIP_INDEX}" && \
 # Copy repo (build context = repository root)
 COPY . /app
 
-# Remove torchaudio from pyproject.toml to avoid conflict with container's PyTorch
+# Remove torchaudio from pyproject.toml so we install a version matching the container's PyTorch
 RUN sed -i 's/"torchaudio[^"]*",\?//' pyproject.toml
+
+# Install torchaudio with the same version as the container's PyTorch to avoid ABI mismatch
+# (PyPI torchaudio is often built for a different torch; use PyTorch index for matching build.)
+ARG TORCH_INDEX=https://download.pytorch.org/whl/cu128
+RUN TORCH_VER=$(python -c "import torch; print(torch.__version__.split('+')[0])") && \
+    pip install --no-cache-dir --no-deps "torchaudio==${TORCH_VER}" --index-url "${TORCH_INDEX}"
 
 # Install LLaMA Factory and metrics/deepspeed (same as main Dockerfile)
 RUN pip install --no-cache-dir --no-build-isolation -e . && \
-    pip install --no-deps torchaudio && \
     pip install --no-cache-dir --no-build-isolation -r requirements/metrics.txt -r requirements/deepspeed.txt || true
 
 # Expose ports
