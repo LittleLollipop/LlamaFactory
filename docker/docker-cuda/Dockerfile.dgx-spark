@@ -33,10 +33,10 @@ COPY . /app
 # Remove torchaudio from pyproject.toml so we install a version matching the container's PyTorch
 RUN sed -i 's/"torchaudio[^"]*",\?//' pyproject.toml
 
-# Install torchaudio with the same version as the container's PyTorch to avoid ABI mismatch
-# (PyPI torchaudio is often built for a different torch; use PyTorch index for matching build.)
+# Install torchaudio with the same base version as the container's PyTorch to avoid ABI mismatch.
+# NGC images may use 2.10.0a0; PyTorch index has 2.10.0 / 2.10.0+cu128, so strip alpha suffix.
 ARG TORCH_INDEX=https://download.pytorch.org/whl/cu128
-RUN TORCH_VER=$(python -c "import torch; print(torch.__version__.split('+')[0])") && \
+RUN TORCH_VER=$(python -c "import torch, re; v=torch.__version__.split('+')[0]; print(re.sub(r'[a-z]+\d*$', '', v))") && \
     pip install --no-cache-dir --no-deps "torchaudio==${TORCH_VER}" --index-url "${TORCH_INDEX}"
 
 # Install LLaMA Factory and metrics/deepspeed (same as main Dockerfile)
