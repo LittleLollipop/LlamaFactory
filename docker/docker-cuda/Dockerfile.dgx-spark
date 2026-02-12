@@ -3,9 +3,9 @@
 #   docker build -f docker/docker-cuda/Dockerfile.dgx-spark -t llamafactory:dgx-spark .
 # See: https://build.nvidia.com/spark/llama-factory
 
-# NGC PyTorch container for Grace Blackwell (ARM64); supports CUDA 13
+# NGC PyTorch container for Grace Blackwell (ARM64); use a stable release
 # https://catalog.ngc.nvidia.com/orgs/nvidia/containers/pytorch
-ARG BASE_IMAGE=nvcr.io/nvidia/pytorch:25.11-py3
+ARG BASE_IMAGE=nvcr.io/nvidia/pytorch:24.08-py3
 FROM ${BASE_IMAGE}
 
 # Installation arguments
@@ -30,17 +30,12 @@ RUN pip config set global.index-url "${PIP_INDEX}" && \
 # Copy repo (build context = repository root)
 COPY . /app
 
-# Remove torchaudio from pyproject.toml so we can install a build that matches the container's PyTorch
-RUN sed -i 's/"torchaudio[^"]*",\?//' pyproject.toml
-
-# Install torchaudio from source with the same base version as the container's PyTorch to avoid ABI mismatch.
-# NGC images may use versions like 2.10.0a0; strip alpha/beta/rc suffix when pinning.
-RUN TORCH_VER=$(python -c "import torch, re; v=torch.__version__.split('+')[0]; print(re.sub(r'[a-z]+\d*$', '', v))") && \
-    pip install --no-cache-dir --no-deps --no-binary torchaudio "torchaudio==${TORCH_VER}"
-
-# Install LLaMA Factory and metrics/deepspeed (same as main Dockerfile)
-RUN pip install --no-cache-dir --no-build-isolation -e . && \
-    pip install --no-cache-dir --no-build-isolation -r requirements/metrics.txt -r requirements/deepspeed.txt || true
+# Follow NVIDIA Spark playbook style: remove torchaudio from deps, install LLaMA Factory + metrics,
+# then install torchaudio separately to avoid conflict with container's optimized PyTorch build.
+RUN sed -i 's/"torchaudio[^"]*",\?//' pyproject.toml && \
+    pip install --no-cache-dir --no-build-isolation -e . && \
+    pip install --no-cache-dir --no-build-isolation -r requirements/metrics.txt && \
+    pip install --no-deps torchaudio
 
 # Expose ports
 ENV GRADIO_SERVER_PORT=7860
